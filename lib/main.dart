@@ -1,7 +1,5 @@
-import 'dart:convert';
-
+import 'package:esp32_ble_g3theme/main_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -19,7 +17,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// ignore: must_be_immutable
 class HomePage extends StatelessWidget {
+  bool searching = false;
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<MainModel>(
@@ -33,15 +33,29 @@ class HomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Icon(model.isConnected() ? Icons.bluetooth_connected : Icons.bluetooth_disabled),
                 Text('Latest Your Body-Temperature'),
-                Text(model.receiveString, style: TextStyle(fontSize: 40, color: Colors.blue),),
+                SizedBox(width: 100, height: 20,),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.ideographic,
+                  children: [
+                    Text(model.receiveString, style: TextStyle(fontSize: 60, color: Colors.green),),
+                    SizedBox(width: 20, height: 40,),
+                    Text('deg C', style: TextStyle(fontSize: 25, color: Colors.black))
+                  ],
+                ),
+                SizedBox(width: 100, height: 20,),
                 RaisedButton(
-                  child: Icon(model.isConnected() ? Icons.bluetooth_connected : Icons.bluetooth_disabled),
+                  child: Icon(searching ? Icons.bluetooth_searching_rounded : Icons.bluetooth_disabled_rounded),
                   onPressed: () {
                     if (model.isConnected() == true) {
                       model.disconnect();
+                      searching = false;
                     } else {
                       model.scanDevices();
+                      searching = true;
                     }
                   },
                 ),
@@ -51,77 +65,5 @@ class HomePage extends StatelessWidget {
         },),
       )
     );
-  }
-}
-
-
-
-class MainModel extends ChangeNotifier {
-
-  final _connectToLocalName = 'ESP32';
-  final FlutterBlue flutterBlue = FlutterBlue.instance;
-  final _timeout = 4;
-  BluetoothDevice _device;
-  BluetoothCharacteristic _notifyCharacteristic;
-  String receiveString = 'Nan';
-  List<int> receiveRaw = [];
-
-
-  void scanDevices() {
-    flutterBlue.startScan(timeout: Duration(seconds: _timeout));
-
-    // Listen to Scan Results
-    var subscription = flutterBlue.scanResults.listen((results) async {
-      for (ScanResult r in results) {
-        print('${r.device.name} found! rssi: ${r.rssi}');
-
-        if (r.device.name == _connectToLocalName) {
-          // Device情報を保持する
-          if (_device == null) {
-            _device = r.device;
-            notifyListeners();
-            await connect();
-            break;
-          }
-        }
-      }
-    });
-
-    flutterBlue.stopScan();
-  }
-
-  void connect() async {
-    await _device.connect();
-    print('Connect!');
-
-    List<BluetoothService> services = await _device.discoverServices();
-    services.forEach((service) async {
-      service.characteristics.forEach((characteristic) async {
-        if (characteristic.properties.notify) {
-          _notifyCharacteristic = characteristic;
-          await _notifyCharacteristic.setNotifyValue(true);
-          _notifyCharacteristic.value.listen((value) {
-            receiveRaw = value;
-            receiveString = utf8.decode(value);
-            print('recevied: ${receiveString}');
-            notifyListeners();
-          });
-          print('notify');
-        }
-      });
-    });
-  }
-
-  void disconnect() {
-    _device.disconnect();
-    _device = null;
-    _notifyCharacteristic = null;
-    print('Disconnect');
-    notifyListeners();
-  }
-
-  bool isConnected() {
-    if (_device == null) return false;
-    return true;
   }
 }
