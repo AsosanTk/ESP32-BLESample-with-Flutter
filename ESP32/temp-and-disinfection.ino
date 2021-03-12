@@ -21,7 +21,7 @@ const int SCL_Pin = 22;
 const int Servo_Pin = 27;
 const int ALED_Pin = 18;
 const int Buzzer_Pin = 32;
-const double adjustTemp = 3.7; //こんな感じの文献があった
+const double adjustTemp = 2.7;
 const double leastTemp = 35.0;
 const double mostTemp = 37.0;
 const double farFromHand = 10;
@@ -72,6 +72,7 @@ double bodytemp() {
   if (temp > 99) {
     temp = 0;
   }
+  temp += adjustTemp;
   return temp;
 }
 void showtemp(double temp) {
