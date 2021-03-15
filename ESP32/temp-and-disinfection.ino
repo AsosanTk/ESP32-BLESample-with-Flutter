@@ -87,10 +87,12 @@ void showtemp(double temp) {
 }
 
 void disinfection() {
-  servo.write(180);
-  delay(1000);
-  servo.write(0);
-  delay(1000);
+  for (int i = 0; i < 3; i++) {
+    servo.write(180);
+    delay(1000);
+    servo.write(0);
+    delay(1000);
+  }
 }
 
 void buzzerandled() {
