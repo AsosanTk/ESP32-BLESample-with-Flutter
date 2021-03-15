@@ -52,9 +52,12 @@ class HomePage extends StatelessWidget {
                   onPressed: () {
                     if (model.isConnected() == true) {
                       model.disconnect();
-                      searching = false;
                     } else {
                       model.scanDevices();
+                    }
+                    if (searching) {
+                      searching = false;
+                    } else {
                       searching = true;
                     }
                   },
